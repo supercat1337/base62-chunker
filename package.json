@@ -1,0 +1,63 @@
+{
+  "name": "@supercat1337/base62-chunker",
+  "version": "1.0.0",
+  "description": "Split text into base62-only lines with embedded metadata and reassemble it losslessly.",
+  "author": "Albert Bazaleev",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/types.d.ts",
+      "import": "./dist/base62-chunker.esm.js"
+    }
+  },
+  "types": "dist/types.d.ts",
+  "scripts": {
+    "test": "c8 ava",
+    "clean": "shx rm -rf ./dist && shx mkdir ./dist",
+    "build_esm": "rollup ./src/index.js --file ./dist/base62-chunker.esm.js --format es",
+    "build_esm_bundle": "esbuild ./src/index.js --format=esm --bundle --platform=neutral --outfile=./dist/base62-chunker.esm.bundle.js",
+    "gen_types": "npx tsc --project my.tsconfig.types.json && shx cp src/index.d.ts dist/types-temp/src/index.d.ts",
+    "bundle_types": "api-extractor run --local",
+    "build": "npm run clean && npm run build_esm && npm run build_esm_bundle && npm run gen_types && npm run bundle_types && shx rm -rf dist/types-temp",
+    "lint": "eslint src/ tests/",
+    "prepublishOnly": "npm run build && npm test"
+  },
+  "devDependencies": {
+    "@microsoft/api-extractor": "^7.59.4",
+    "ava": "^8.0.1",
+    "c8": "^9.1.0",
+    "esbuild": "^0.24.0",
+    "rollup": "^4.60.1",
+    "shx": "^0.4.0"
+  },
+  "keywords": [
+    "base62",
+    "chunk",
+    "split",
+    "encode",
+    "decode",
+    "session",
+    "text"
+  ],
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org"
+  },
+  "homepage": "https://github.com/supercat1337/base62-chunker",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/supercat1337/base62-chunker.git"
+  },
+  "files": [
+    "dist/base62-chunker.esm.js",
+    "dist/base62-chunker.esm.bundle.js",
+    "dist/types.d.ts",
+    "README.md",
+    "LICENSE.txt"
+  ],
+  "ava": {
+    "files": ["tests/**/*.test.js"],
+    "nodeArguments": ["--experimental-vm-modules"],
+    "extensions": ["js"]
+  }
+}
