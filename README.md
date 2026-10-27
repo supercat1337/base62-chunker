@@ -555,9 +555,6 @@ wider `crc16` field costs at most 1 byte per chunk compared to `crc8`.
 
 ## Examples
 
-Live examples live in
-[`store2-examples`](https://github.com/supercat1337/store2-examples).
-
 Typical scenarios:
 
 - **Chunked transport over a constrained channel** — the client splits text
