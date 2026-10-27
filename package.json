@@ -1,6 +1,6 @@
 {
   "name": "@supercat1337/base62-chunker",
-  "version": "1.0.1",
+  "version": "2.0.0",
   "description": "Split text into base62-only lines with embedded metadata and reassemble it losslessly.",
   "author": "Albert Bazaleev",
   "license": "MIT",

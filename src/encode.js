@@ -1,18 +1,22 @@
 // @ts-check
 
-import { LOG2_BASE62, randomBase62 } from './base62.js';
+import { LETTERS, LOG2_BASE62, randomBase62 } from './base62.js';
 import { DEFAULT_CONFIG, resolveConfig } from './config.js';
 import { formatChunk, validateSessionId } from './chunk.js';
 
 /**
  * Generate a fresh base62 session id of `config.sessionLength` characters.
  *
+ * The first character is always a letter (`A-Z` or `a-z`), so encoded
+ * lines never start with a digit. Every remaining character is drawn from
+ * the full base62 alphabet.
+ *
  * @public
  * @param {import("./types.js").ResolvedConfig} [config]
  * @returns {string}
  */
 export function generateSessionId(config = DEFAULT_CONFIG) {
-    return randomBase62(config.sessionLength);
+    return randomBase62(config.sessionLength, LETTERS);
 }
 
 /**

@@ -1,5 +1,6 @@
 // src/base62.js
 var ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+var LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 var RADIX = 62n;
 var LOG2_BASE62 = Math.log2(62);
 var CHAR_VALUE = (() => {
@@ -72,19 +73,25 @@ function base62ToBytes(str, expectedLength) {
   }
   return Uint8Array.from(bytes);
 }
-function randomBase62(length) {
+function randomChars(alphabet, count) {
+  const n = alphabet.length;
+  const limit = Math.floor(256 / n) * n;
   const out = [];
-  const batch = new Uint8Array(Math.max(16, length * 2));
-  while (out.length < length) {
+  const batch = new Uint8Array(Math.max(16, count * 2));
+  while (out.length < count) {
     globalThis.crypto.getRandomValues(batch);
-    for (let i = 0; i < batch.length && out.length < length; i += 1) {
-      const byte = batch[i];
-      if (byte < 248) {
-        out.push(ALPHABET[byte % 62]);
+    for (let i = 0; i < batch.length && out.length < count; i += 1) {
+      if (batch[i] < limit) {
+        out.push(alphabet[batch[i] % n]);
       }
     }
   }
-  return out.join("");
+  return out;
+}
+function randomBase62(length, firstCharAlphabet = ALPHABET) {
+  if (length === 0) return "";
+  const first = randomChars(firstCharAlphabet, 1)[0];
+  return first + randomChars(ALPHABET, length - 1).join("");
 }
 
 // src/config.js
@@ -179,6 +186,9 @@ function validateSessionId(sessionId, config = DEFAULT_CONFIG) {
   if (!/^[0-9A-Za-z]+$/.test(sessionId)) {
     throw new RangeError("sessionId must contain only base62 characters");
   }
+  if (!/^[A-Za-z]/.test(sessionId)) {
+    throw new RangeError("sessionId must start with a letter (A-Z, a-z)");
+  }
 }
 function parseHeader(line, config = DEFAULT_CONFIG) {
   if (typeof line !== "string") {
@@ -189,6 +199,9 @@ function parseHeader(line, config = DEFAULT_CONFIG) {
   }
   if (!/^[0-9A-Za-z]+$/.test(line)) {
     throw new Error("Line contains non-base62 characters");
+  }
+  if (!/^[A-Za-z]/.test(line)) {
+    throw new Error("Line must start with a letter (A-Z, a-z)");
   }
   let pos = 0;
   const session = line.slice(pos, pos += config.sessionLength);
@@ -294,7 +307,7 @@ function decodeText(lines, options = {}) {
 
 // src/encode.js
 function generateSessionId(config = DEFAULT_CONFIG) {
-  return randomBase62(config.sessionLength);
+  return randomBase62(config.sessionLength, LETTERS);
 }
 function resolveSessionId(sessionId, config) {
   if (sessionId === void 0) return generateSessionId(config);
@@ -382,6 +395,7 @@ function mode(values) {
   }
   return tie ? null : best;
 }
+var SESSION_PREFIX_RE = /^[A-Za-z][0-9A-Za-z]*$/;
 function analyzeLines(lines, options = {}) {
   if (!Array.isArray(lines)) {
     throw new TypeError("Expected an array of lines");
@@ -396,7 +410,7 @@ function analyzeLines(lines, options = {}) {
       continue;
     }
     const sessionId = line.slice(0, config.sessionLength);
-    if (!/^[0-9A-Za-z]+$/.test(sessionId)) {
+    if (!SESSION_PREFIX_RE.test(sessionId)) {
       malformed.push({ line: i, reason: "invalid session prefix" });
       continue;
     }
@@ -486,7 +500,7 @@ function analyzeItems(items, options) {
       continue;
     }
     const sessionId = line.slice(0, config.sessionLength);
-    if (!/^[0-9A-Za-z]+$/.test(sessionId)) {
+    if (!SESSION_PREFIX_RE.test(sessionId)) {
       malformed.push({ item, line: i, reason: "invalid session prefix" });
       continue;
     }

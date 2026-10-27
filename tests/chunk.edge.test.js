@@ -10,9 +10,10 @@ const { maxIndex, maxTotal, maxByteCount } = DEFAULT_CONFIG;
 // ── validateSessionId (via formatChunk) ──────────────────────────────────────
 
 test('formatChunk: rejects non-string session', t => {
-    t.throws(() => formatChunk({ session: 123, index: 0, total: 1, bytes: new Uint8Array() }), {
-        message: /6-character string/,
-    });
+    t.throws(
+        () => formatChunk(/** @type {any} */ ({ session: 123, index: 0, total: 1, bytes: new Uint8Array() })),
+        { message: /6-character string/ }
+    );
 });
 
 test('formatChunk: rejects too-short session', t => {
@@ -31,7 +32,7 @@ test('formatChunk: rejects non-base62 session', t => {
 // ── parseHeader (via parseChunk) ─────────────────────────────────────────────
 
 test('parseChunk: rejects non-string input', t => {
-    t.throws(() => parseChunk(123), { instanceOf: TypeError });
+    t.throws(() => parseChunk(/** @type {any} */ (123)), { instanceOf: TypeError });
 });
 
 test('parseChunk: rejects line shorter than metaLength', t => {
@@ -68,13 +69,14 @@ test('parseChunk: rejects checksum mismatch', t => {
 // ── formatChunk validation ──────────────────────────────────────────────────
 
 test('formatChunk: rejects non-object chunk', t => {
-    t.throws(() => formatChunk(null), { message: /must be an object/ });
+    t.throws(() => formatChunk(/** @type {any} */ (null)), { message: /must be an object/ });
 });
 
 test('formatChunk: rejects bytes that are not a Uint8Array', t => {
-    t.throws(() => formatChunk({ session: 'AbCd12', index: 0, total: 1, bytes: [] }), {
-        message: /must be a Uint8Array/,
-    });
+    t.throws(
+        () => formatChunk(/** @type {any} */ ({ session: 'AbCd12', index: 0, total: 1, bytes: [] })),
+        { message: /must be a Uint8Array/ }
+    );
 });
 
 test('formatChunk: rejects negative index', t => {
@@ -142,4 +144,18 @@ test('formatChunk: rejects bytes longer than maxByteCount', t => {
             }),
         { message: /exceeds the \d+-byte limit/ }
     );
+});
+
+test('formatChunk: rejects session starting with a digit', t => {
+    t.throws(
+        () => formatChunk({ session: '1AAAAA', index: 0, total: 1, bytes: new Uint8Array() }),
+        { message: /start with a letter/ }
+    );
+});
+
+test('parseChunk: rejects line whose session starts with a digit', t => {
+    // Valid header shape but the session begins with '1'
+    t.throws(() => parseChunk('1AAAAA' + '000' + '001' + '00' + '000'), {
+        message: /start with a letter/,
+    });
 });

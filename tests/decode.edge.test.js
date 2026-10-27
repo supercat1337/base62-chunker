@@ -10,17 +10,18 @@ test('joinChunks: rejects empty array', t => {
 });
 
 test('joinChunks: rejects non-array', t => {
-    t.throws(() => joinChunks('nope'), { instanceOf: TypeError });
+    t.throws(() => joinChunks(/** @type {any} */ ('nope')), { instanceOf: TypeError });
 });
 
 test('joinChunks: rejects null chunk', t => {
-    t.throws(() => joinChunks([null]), { message: /is not an object/ });
+    t.throws(() => joinChunks(/** @type {any} */ ([null])), { message: /is not an object/ });
 });
 
 test('joinChunks: rejects chunk whose bytes are not Uint8Array', t => {
-    t.throws(() => joinChunks([{ session: 'AbCd12', index: 0, total: 1, bytes: [] }]), {
-        message: /bytes is not a Uint8Array/,
-    });
+    t.throws(
+        () => joinChunks(/** @type {any} */ ([{ session: 'AbCd12', index: 0, total: 1, bytes: [] }])),
+        { message: /bytes is not a Uint8Array/ }
+    );
 });
 
 test('joinChunks: rejects total mismatch', t => {
@@ -40,7 +41,7 @@ test('chunksFromLines: rejects empty array', t => {
 });
 
 test('chunksFromLines: rejects non-array', t => {
-    t.throws(() => chunksFromLines('nope'), { instanceOf: TypeError });
+    t.throws(() => chunksFromLines(/** @type {any} */ ('nope')), { instanceOf: TypeError });
 });
 
 test('decodeText: rejects empty input', t => {

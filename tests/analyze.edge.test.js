@@ -2,16 +2,22 @@
 
 import test from 'ava';
 
-import { analyzeLines, completeSessions, incompleteSessions } from '../src/analyze.js';
+import {
+    analyzeItems,
+    analyzeLines,
+    completeSessions,
+    incompleteSessions,
+} from '../src/analyze.js';
 import { formatChunk } from '../src/chunk.js';
 import { encodeText } from '../src/encode.js';
 
 test('analyzeLines: rejects non-array input', t => {
-    t.throws(() => analyzeLines('nope'), { instanceOf: TypeError });
+    t.throws(() => analyzeLines(/** @type {any} */ ('nope')), { instanceOf: TypeError });
 });
 
 test('analyzeLines: uses majority total when chunks disagree', t => {
-    // mode([2, 2, 3]) → 2 (покрывает ветку count < bestCount)
+    // mode([2, 2, 3]) → 2
+    /** @type {(index: number, total: number) => string} */
     const mk = (index, total) =>
         formatChunk({
             session: 'AbCd12',
@@ -63,7 +69,7 @@ test('completeSessions / incompleteSessions: mixed input', t => {
 });
 
 test('analyzeLines: reports present/missing/duplicates together', t => {
-    // total=3, have [0, 0, 2] → missing 1, duplicate 0
+    /** @type {(idx: number) => string} */
     const mk = idx =>
         formatChunk({
             session: 'AbCd12',
@@ -76,4 +82,17 @@ test('analyzeLines: reports present/missing/duplicates together', t => {
     t.deepEqual(s.missing, [1]);
     t.deepEqual(s.duplicates, [0]);
     t.false(s.complete);
+});
+
+test('analyzeLines: digit-leading session is malformed, not thrown', t => {
+    const line = '1AAAAA' + '000' + '001' + '00' + '000';
+    const report = analyzeLines([line]);
+    t.is(report.malformed.length, 1);
+});
+
+test('analyzeItems: digit-leading session goes to malformed with .item', t => {
+    const line = '1AAAAA' + '000' + '001' + '00' + '000';
+    const report = analyzeItems([{ id: 7, chunk: line }], { getLine: r => r.chunk });
+    t.is(report.malformed.length, 1);
+    t.is(report.malformed[0].item.id, 7);
 });

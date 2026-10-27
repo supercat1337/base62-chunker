@@ -8,6 +8,13 @@
  */
 const ALPHABET = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 
+/**
+ * Letters-only alphabet: `A-Z` then `a-z`. Used as the first-character
+ * source for session ids, so that encoded lines never begin with a digit.
+ * @internal
+ */
+const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+
 /** Radix used by all base62 conversions. @internal */
 const RADIX = 62n;
 
@@ -137,31 +144,51 @@ function base62ToBytes(str, expectedLength) {
 }
 
 /**
- * Generate a cryptographically random base62 string of `length` characters.
+ * Draw `count` uniformly random characters from `alphabet`.
  *
- * Uses `crypto.getRandomValues` and applies rejection sampling so bytes
- * `[248..255]` are discarded, giving a uniform distribution over the
- * alphabet (no modulo bias).
+ * Uses `crypto.getRandomValues` with rejection sampling: bytes at or above
+ * `floor(256 / n) * n` are discarded, so every character is drawn with
+ * probability `1 / n` (no modulo bias).
  *
  * @internal
- * @param {number} length
- * @returns {string}
+ * @param {string} alphabet
+ * @param {number} count
+ * @returns {string[]}
  */
-function randomBase62(length) {
+function randomChars(alphabet, count) {
+    const n = alphabet.length;
+    const limit = Math.floor(256 / n) * n;
     /** @type {string[]} */
     const out = [];
-    const batch = new Uint8Array(Math.max(16, length * 2));
-    while (out.length < length) {
+    const batch = new Uint8Array(Math.max(16, count * 2));
+    while (out.length < count) {
         globalThis.crypto.getRandomValues(batch);
-        for (let i = 0; i < batch.length && out.length < length; i += 1) {
-            const byte = batch[i];
-            // 248 = 62 * 4; bytes below it map uniformly onto [0, 61] via mod 62.
-            if (byte < 248) {
-                out.push(ALPHABET[byte % 62]);
+        for (let i = 0; i < batch.length && out.length < count; i += 1) {
+            if (batch[i] < limit) {
+                out.push(alphabet[batch[i] % n]);
             }
         }
     }
-    return out.join('');
+    return out;
+}
+
+/**
+ * Generate a cryptographically random string of `length` characters.
+ *
+ * Without a `firstCharAlphabet` argument, every character comes from the
+ * base62 alphabet. When `firstCharAlphabet` is provided, the first
+ * character is drawn from it instead — this is used to make session ids
+ * start with a letter, so encoded lines never begin with a digit.
+ *
+ * @internal
+ * @param {number} length
+ * @param {string} [firstCharAlphabet]
+ * @returns {string}
+ */
+function randomBase62(length, firstCharAlphabet = ALPHABET) {
+    if (length === 0) return '';
+    const first = randomChars(firstCharAlphabet, 1)[0];
+    return first + randomChars(ALPHABET, length - 1).join('');
 }
 
 // @ts-check
@@ -335,10 +362,17 @@ function computeChecksum(bytes, algorithm) {
 
 /**
  * Validate a session id against the resolved config.
+ *
+ * A valid session id must be exactly `config.sessionLength` base62
+ * characters long and start with a letter — this guarantees that the
+ * encoded line never begins with a digit.
+ *
  * @internal
  * @param {string} sessionId
  * @param {import("./types.js").ResolvedConfig} [config]
  * @returns {void}
+ * @throws {RangeError} If the length, the alphabet, or the first character
+ *                      are wrong.
  */
 function validateSessionId(sessionId, config = DEFAULT_CONFIG) {
     if (typeof sessionId !== 'string' || sessionId.length !== config.sessionLength) {
@@ -346,6 +380,9 @@ function validateSessionId(sessionId, config = DEFAULT_CONFIG) {
     }
     if (!/^[0-9A-Za-z]+$/.test(sessionId)) {
         throw new RangeError('sessionId must contain only base62 characters');
+    }
+    if (!/^[A-Za-z]/.test(sessionId)) {
+        throw new RangeError('sessionId must start with a letter (A-Z, a-z)');
     }
 }
 
@@ -377,6 +414,9 @@ function parseHeader(line, config = DEFAULT_CONFIG) {
     }
     if (!/^[0-9A-Za-z]+$/.test(line)) {
         throw new Error('Line contains non-base62 characters');
+    }
+    if (!/^[A-Za-z]/.test(line)) {
+        throw new Error('Line must start with a letter (A-Z, a-z)');
     }
 
     let pos = 0;
@@ -554,12 +594,16 @@ function decodeText(lines, options = {}) {
 /**
  * Generate a fresh base62 session id of `config.sessionLength` characters.
  *
+ * The first character is always a letter (`A-Z` or `a-z`), so encoded
+ * lines never start with a digit. Every remaining character is drawn from
+ * the full base62 alphabet.
+ *
  * @public
  * @param {import("./types.js").ResolvedConfig} [config]
  * @returns {string}
  */
 function generateSessionId(config = DEFAULT_CONFIG) {
-    return randomBase62(config.sessionLength);
+    return randomBase62(config.sessionLength, LETTERS);
 }
 
 /**
@@ -701,6 +745,15 @@ function mode(values) {
 }
 
 /**
+ * A session id must start with a letter (A-Z, a-z) and consist only of
+ * base62 characters. This guarantees that encoded lines never begin with
+ * a digit. Both `analyzeLines` and `analyzeItems` use this exact regex —
+ * they must not diverge.
+ * @internal
+ */
+const SESSION_PREFIX_RE = /^[A-Za-z][0-9A-Za-z]*$/;
+
+/**
  * Accumulator for one session during a single `analyzeLines` pass.
  * @internal
  * @typedef {object} Bucket
@@ -743,7 +796,7 @@ function analyzeLines(lines, options = {}) {
         }
 
         const sessionId = line.slice(0, config.sessionLength);
-        if (!/^[0-9A-Za-z]+$/.test(sessionId)) {
+        if (!SESSION_PREFIX_RE.test(sessionId)) {
             malformed.push({ line: i, reason: 'invalid session prefix' });
             continue;
         }
@@ -916,7 +969,7 @@ function analyzeItems(items, options) {
         }
 
         const sessionId = line.slice(0, config.sessionLength);
-        if (!/^[0-9A-Za-z]+$/.test(sessionId)) {
+        if (!SESSION_PREFIX_RE.test(sessionId)) {
             malformed.push({ item, line: i, reason: 'invalid session prefix' });
             continue;
         }

@@ -6,10 +6,17 @@ import { computeChecksum } from './crc.js';
 
 /**
  * Validate a session id against the resolved config.
+ *
+ * A valid session id must be exactly `config.sessionLength` base62
+ * characters long and start with a letter — this guarantees that the
+ * encoded line never begins with a digit.
+ *
  * @internal
  * @param {string} sessionId
  * @param {import("./types.js").ResolvedConfig} [config]
  * @returns {void}
+ * @throws {RangeError} If the length, the alphabet, or the first character
+ *                      are wrong.
  */
 export function validateSessionId(sessionId, config = DEFAULT_CONFIG) {
     if (typeof sessionId !== 'string' || sessionId.length !== config.sessionLength) {
@@ -17,6 +24,9 @@ export function validateSessionId(sessionId, config = DEFAULT_CONFIG) {
     }
     if (!/^[0-9A-Za-z]+$/.test(sessionId)) {
         throw new RangeError('sessionId must contain only base62 characters');
+    }
+    if (!/^[A-Za-z]/.test(sessionId)) {
+        throw new RangeError('sessionId must start with a letter (A-Z, a-z)');
     }
 }
 
@@ -48,6 +58,9 @@ export function parseHeader(line, config = DEFAULT_CONFIG) {
     }
     if (!/^[0-9A-Za-z]+$/.test(line)) {
         throw new Error('Line contains non-base62 characters');
+    }
+    if (!/^[A-Za-z]/.test(line)) {
+        throw new Error('Line must start with a letter (A-Z, a-z)');
     }
 
     let pos = 0;

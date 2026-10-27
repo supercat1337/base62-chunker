@@ -2,7 +2,7 @@
 
 import test from 'ava';
 
-import { DEFAULT_CONFIG } from '../src/config.js';
+import { DEFAULT_CONFIG, resolveConfig } from '../src/config.js';
 import { encodeText, generateSessionId, splitText } from '../src/encode.js';
 
 const { metaLength } = DEFAULT_CONFIG;
@@ -14,7 +14,7 @@ test('generateSessionId: matches default 6-char session length', t => {
 });
 
 test('generateSessionId: honours custom config', t => {
-    const custom = { sessionLength: 8, checksum: 'crc16' };
+    const custom = resolveConfig({ sessionLength: 8, checksum: 'crc16' });
     t.regex(generateSessionId(custom), /^[0-9A-Za-z]{8}$/);
 });
 
@@ -58,4 +58,9 @@ test('splitText: chunk sizes match bytesPerChunk', t => {
 test('splitText: deterministic for a fixed sessionId', t => {
     const opts = { maxLen: 40, sessionId: 'AbCd12' };
     t.deepEqual(splitText('some text '.repeat(10), opts), splitText('some text '.repeat(10), opts));
+});
+
+test('generateSessionId: always starts with a letter', t => {
+    const samples = Array.from({ length: 200 }, () => generateSessionId());
+    t.true(samples.every(s => /^[A-Za-z]/.test(s)));
 });

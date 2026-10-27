@@ -355,6 +355,10 @@ export declare function formatChunk(chunk: Chunk, config?: ResolvedConfig): stri
 /**
  * Generate a fresh base62 session id of `config.sessionLength` characters.
  *
+ * The first character is always a letter (`A-Z` or `a-z`), so encoded
+ * lines never start with a digit. Every remaining character is drawn from
+ * the full base62 alphabet.
+ *
  * @public
  * @param {import("./types.js").ResolvedConfig} [config]
  * @returns {string}

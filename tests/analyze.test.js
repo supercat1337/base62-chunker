@@ -2,7 +2,12 @@
 
 import test from 'ava';
 
-import { analyzeItems, analyzeLines, completeSessions, incompleteSessions } from '../src/analyze.js';
+import {
+    analyzeItems,
+    analyzeLines,
+    completeSessions,
+    incompleteSessions,
+} from '../src/analyze.js';
 import { formatChunk } from '../src/chunk.js';
 import { encodeText } from '../src/encode.js';
 
@@ -37,7 +42,7 @@ test('analyzeLines: detects missing chunks', t => {
     const report = analyzeLines(lines.slice(0, -1));
     const s = report.sessions[0];
     t.false(s.complete);
-    t.deepEqual(s.missing, [s.expectedTotal - 1]);
+    t.deepEqual(s.missing, [/** @type {number} */ (s.expectedTotal) - 1]);
 });
 
 test('analyzeLines: detects duplicates', t => {
@@ -67,7 +72,7 @@ test('analyzeLines: detects total mismatch', t => {
 });
 
 test('analyzeLines: classifies totally malformed lines', t => {
-    const report = analyzeLines(['short', 'abc!defxxxx', 42]);
+    const report = analyzeLines(/** @type {any} */ (['short', 'abc!defxxxx', 42]));
     t.is(report.sessions.length, 0);
     t.is(report.malformed.length, 3);
     t.false(report.ok);
@@ -120,7 +125,9 @@ test('analyzeItems: preserves source ids per session', t => {
     const report = analyzeItems(rows, { getLine: r => r.chunk });
     t.is(report.sessions.length, 2);
 
-    const sessionA = report.sessions.find(s => s.sessionId === 'AAAAAA');
+    const sessionA = /** @type {NonNullable<typeof report.sessions[number]>} */ (
+        report.sessions.find(s => s.sessionId === 'AAAAAA')
+    );
     t.true(sessionA.complete);
     t.is(sessionA.items.length, a.length);
     t.true(sessionA.items.every(r => r.id >= 100 && r.id < 200));
@@ -136,7 +143,7 @@ test('analyzeItems: malformed items carry .item', t => {
 });
 
 test('analyzeItems: rejects non-array', t => {
-    t.throws(() => analyzeItems('nope', { getLine: () => '' }), {
+    t.throws(() => analyzeItems(/** @type {any} */ ('nope'), { getLine: () => '' }), {
         instanceOf: TypeError,
     });
 });

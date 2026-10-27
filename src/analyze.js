@@ -32,6 +32,15 @@ function mode(values) {
 }
 
 /**
+ * A session id must start with a letter (A-Z, a-z) and consist only of
+ * base62 characters. This guarantees that encoded lines never begin with
+ * a digit. Both `analyzeLines` and `analyzeItems` use this exact regex —
+ * they must not diverge.
+ * @internal
+ */
+const SESSION_PREFIX_RE = /^[A-Za-z][0-9A-Za-z]*$/;
+
+/**
  * Accumulator for one session during a single `analyzeLines` pass.
  * @internal
  * @typedef {object} Bucket
@@ -74,7 +83,7 @@ export function analyzeLines(lines, options = {}) {
         }
 
         const sessionId = line.slice(0, config.sessionLength);
-        if (!/^[0-9A-Za-z]+$/.test(sessionId)) {
+        if (!SESSION_PREFIX_RE.test(sessionId)) {
             malformed.push({ line: i, reason: 'invalid session prefix' });
             continue;
         }
@@ -247,7 +256,7 @@ export function analyzeItems(items, options) {
         }
 
         const sessionId = line.slice(0, config.sessionLength);
-        if (!/^[0-9A-Za-z]+$/.test(sessionId)) {
+        if (!SESSION_PREFIX_RE.test(sessionId)) {
             malformed.push({ item, line: i, reason: 'invalid session prefix' });
             continue;
         }
@@ -324,4 +333,3 @@ export function analyzeItems(items, options) {
     const ok = malformed.length === 0 && sessions.every(s => s.complete);
     return { ok, sessions, malformed };
 }
-

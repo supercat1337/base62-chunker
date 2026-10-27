@@ -8,7 +8,7 @@ import { encodeText, splitText } from '../src/encode.js';
 const { maxByteCount, maxTotal, metaLength } = DEFAULT_CONFIG;
 
 test('splitText: rejects non-string text', t => {
-    t.throws(() => splitText(123), { instanceOf: TypeError });
+    t.throws(() => splitText(/** @type {any} */ (123)), { instanceOf: TypeError });
 });
 
 test('splitText: rejects bytesPerChunk = 0', t => {
