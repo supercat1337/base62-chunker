@@ -387,23 +387,11 @@ function validateSessionId(sessionId, config = DEFAULT_CONFIG) {
 }
 
 /**
- * Parsed metadata header of an encoded line. Internal helper — not part of
- * the public API.
- * @internal
- * @typedef {object} ChunkHeader
- * @property {string} session
- * @property {number} index
- * @property {number} total
- * @property {number} byteCount
- * @property {number} checksumValue
- */
-
-/**
  * Parse only the metadata header of a line.
  * @internal
  * @param {string} line
  * @param {import("./types.js").ResolvedConfig} [config]
- * @returns {ChunkHeader}
+ * @returns {import('./types.js').ChunkHeader}
  */
 function parseHeader(line, config = DEFAULT_CONFIG) {
     if (typeof line !== 'string') {
@@ -754,15 +742,6 @@ function mode(values) {
 const SESSION_PREFIX_RE = /^[A-Za-z][0-9A-Za-z]*$/;
 
 /**
- * Accumulator for one session during a single `analyzeLines` pass.
- * @internal
- * @typedef {object} Bucket
- * @property {string} sessionId
- * @property {import("./types.js").Chunk[]} chunks
- * @property {import("./types.js").ChunkIssue[]} errors
- */
-
-/**
  * Analyze an array of encoded lines, grouping by session and reporting
  * completeness per session.
  *
@@ -784,7 +763,7 @@ function analyzeLines(lines, options = {}) {
 
     /** @type {import("./types.js").ChunkIssue[]} */
     const malformed = [];
-    /** @type {Map<string, Bucket>} */
+    /** @type {Map<string, import('./types.js').Bucket>} */
     const buckets = new Map();
 
     for (let i = 0; i < lines.length; i += 1) {
@@ -931,17 +910,9 @@ function analyzeItems(items, options) {
     }
     const config = userConfig ? resolveConfig(userConfig) : DEFAULT_CONFIG;
 
-    /**
-     * @internal
-     * @typedef {object} ItemBucket
-     * @property {string} sessionId
-     * @property {{ chunk: import("./types.js").Chunk, item: T }[]} entries
-     * @property {import("./types.js").ItemizedChunkIssue<T>[]} errors
-     */
-
     /** @type {import("./types.js").ItemizedChunkIssue<T>[]} */
     const malformed = [];
-    /** @type {Map<string, ItemBucket>} */
+    /** @type {Map<string, import('./types.js').ItemBucket<T>>} */
     const buckets = new Map();
 
     for (let i = 0; i < items.length; i += 1) {

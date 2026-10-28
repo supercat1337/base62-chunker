@@ -31,23 +31,11 @@ export function validateSessionId(sessionId, config = DEFAULT_CONFIG) {
 }
 
 /**
- * Parsed metadata header of an encoded line. Internal helper — not part of
- * the public API.
- * @internal
- * @typedef {object} ChunkHeader
- * @property {string} session
- * @property {number} index
- * @property {number} total
- * @property {number} byteCount
- * @property {number} checksumValue
- */
-
-/**
  * Parse only the metadata header of a line.
  * @internal
  * @param {string} line
  * @param {import("./types.js").ResolvedConfig} [config]
- * @returns {ChunkHeader}
+ * @returns {import('./types.js').ChunkHeader}
  */
 export function parseHeader(line, config = DEFAULT_CONFIG) {
     if (typeof line !== 'string') {

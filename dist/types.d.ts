@@ -93,14 +93,6 @@ export declare interface AnalyzeItemsOptions<T> {
 }
 
 /**
- * Accumulator for one session during a single `analyzeLines` pass.
- * @internal
- * @typedef {object} Bucket@typedef {object} Bucket
- * @property {string} sessionId
- * @property {import("./types.js").Chunk[]} chunks
- * @property {import("./types.js").ChunkIssue[]} errors
- */
-/**
  * Analyze an array of encoded lines, grouping by session and reporting
  * completeness per session.
  *

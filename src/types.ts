@@ -303,3 +303,47 @@ export interface AnalyzeItemsOptions<T> {
     /** Optional wire-format override; must match the encoder. */
     config?: ChunkConfig;
 }
+
+/**
+ * Accumulator for one session during a single `analyzeLines` pass. Not part
+ * of the public API — stripped from the emitted `.d.ts` by `stripInternal`.
+ *
+ * @internal
+ */
+export interface Bucket {
+    sessionId: string;
+    chunks: Chunk[];
+    errors: ChunkIssue[];
+}
+
+/**
+ * Accumulator for one session during a single `analyzeItems` pass. Entries
+ * pair a parsed chunk with the source item that produced it, so that
+ * `session.items[j]` stays parallel to `session.chunks[j]`.
+ *
+ * Not part of the public API — stripped from the emitted `.d.ts` by
+ * `stripInternal`.
+ *
+ * @internal
+ * @template T
+ */
+export interface ItemBucket<T> {
+    sessionId: string;
+    entries: { chunk: Chunk; item: T }[];
+    errors: ItemizedChunkIssue<T>[];
+}
+
+/**
+ * Parsed metadata header of an encoded line. Produced by `parseHeader` and
+ * consumed by `parseChunk`. Not part of the public API — stripped from the
+ * emitted `.d.ts` by `stripInternal`.
+ *
+ * @internal
+ */
+export interface ChunkHeader {
+    session: string;
+    index: number;
+    total: number;
+    byteCount: number;
+    checksumValue: number;
+}

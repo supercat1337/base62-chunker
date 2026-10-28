@@ -41,15 +41,6 @@ function mode(values) {
 const SESSION_PREFIX_RE = /^[A-Za-z][0-9A-Za-z]*$/;
 
 /**
- * Accumulator for one session during a single `analyzeLines` pass.
- * @internal
- * @typedef {object} Bucket
- * @property {string} sessionId
- * @property {import("./types.js").Chunk[]} chunks
- * @property {import("./types.js").ChunkIssue[]} errors
- */
-
-/**
  * Analyze an array of encoded lines, grouping by session and reporting
  * completeness per session.
  *
@@ -71,7 +62,7 @@ export function analyzeLines(lines, options = {}) {
 
     /** @type {import("./types.js").ChunkIssue[]} */
     const malformed = [];
-    /** @type {Map<string, Bucket>} */
+    /** @type {Map<string, import('./types.js').Bucket>} */
     const buckets = new Map();
 
     for (let i = 0; i < lines.length; i += 1) {
@@ -218,17 +209,9 @@ export function analyzeItems(items, options) {
     }
     const config = userConfig ? resolveConfig(userConfig) : DEFAULT_CONFIG;
 
-    /**
-     * @internal
-     * @typedef {object} ItemBucket
-     * @property {string} sessionId
-     * @property {{ chunk: import("./types.js").Chunk, item: T }[]} entries
-     * @property {import("./types.js").ItemizedChunkIssue<T>[]} errors
-     */
-
     /** @type {import("./types.js").ItemizedChunkIssue<T>[]} */
     const malformed = [];
-    /** @type {Map<string, ItemBucket>} */
+    /** @type {Map<string, import('./types.js').ItemBucket<T>>} */
     const buckets = new Map();
 
     for (let i = 0; i < items.length; i += 1) {
